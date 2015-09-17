@@ -1,0 +1,49 @@
+[
+    {
+      "eventA":"name1",
+      "eventB":"name2",
+      "result":43100,
+      "low":43200,
+      "high":43800,
+      "mean":43500,
+      "sd": 100,
+      "sig": "L"
+    }, {
+      "eventA":"name3",
+      "eventB":"name4",
+      "result": 24300,
+      "low": 22900,
+      "high": 24100,
+      "mean": 23500,
+      "sd": 200,
+      "sig":"H"
+    }, {
+      "eventA":"name5",
+      "eventB":"name6",
+      "result": 12000,
+      "low": 11000,
+      "high": 15000,
+      "mean": 12000,
+      "sd": 1000,
+      "sig":""
+      }, {
+      "eventA":"name3",
+      "eventB":"name4",
+      "result": 30567,
+      "low": 31567,
+      "high": 34567,
+      "mean": 33067,
+      "sd": 500,
+      "sig":"L"
+    }, {
+      "eventA":"name3",
+      "eventB":"name4",
+      "result": 28900,
+      "low": 28800,
+      "high": 31200,
+      "mean": 30000,
+      "sd": 400,
+      "sig":""
+    }
+
+  ]

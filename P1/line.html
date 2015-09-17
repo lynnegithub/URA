@@ -2,29 +2,11 @@
 <html>
 <meta charset="utf-8">
 <head>
-    <title>Table With Embedded Line Chart</title>
+    <title>Basic anomaly statistics for a system trace</title>
     <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
     <link rel="stylesheet" href="http://billmill.org/css/style.css" />
-    <style>
-        table {
-            border-collapse: collapse;
-        }
-        th {
-            border-bottom: 2px solid #ddd;
-            padding: 8px;
-            font-weight: bold;
-        }
-        td {
-            padding: 8px;
-            border-top: 1px solid #ddd;
-        }
-        #chart {
-            padding: 0px;
-        }
-        .xaxislabel {
-            font-size: 9px;
-        }
-    </style>
+    <link rel="stylesheet" type="text/css" href="style.css">
+
 </head>
 <body>
 
@@ -32,123 +14,131 @@
 
 <script>
 
-    var rows = []
-    var formatdate = d3.time.format("%b %d %Y");
-
-    d3.csv("dortmund.csv", function(error, csv) {
-        csv.forEach(function(row) {
-            row.mu = parseFloat(row.mu).toFixed(1);
-            row.sigma = parseFloat(row.sigma).toFixed(1);
-            row.dt = formatdate(new Date(Date.parse(row.date)));
-
-            var res = parseFloat(row.result);
-            if (res < .5) {
-                row.result = "loss";
-            } else if (res > .5) {
-                row.result = "win";
-            } else {
-                row.result = "draw";
-            }
-
-            rows.push(row);
-        });
-
+    d3.json("data.json",function(error,json){
+        if (error) return console.warn(error);
         var table = d3.select("#datatable").append("table");
-        thead = table.append("thead");
-        tbody = table.append("tbody");
+        var thead = table.append("thead");
+        var tbody = table.append("tbody");
 
-        thead.append("th").text("Date");
-        thead.append("th").text("Opponent");
-        thead.append("th").text("Result");
-        thead.append("th").text("Rating");
-        thead.append("th").text("");
-
-        var tr = tbody.selectAll("tr")
-                .data(rows)
-                .enter().append("tr");
-
-        var td = tr.selectAll("td")
-                .data(function(d) { return [d.dt, d.opp, d.result, d.mu]; })
-                .enter().append("td")
-                .text(function(d) { return d; });
-
-        var width = 80,
+        var width = 300,
                 height = d3.select("table")[0][0].clientHeight,
-                mx = 10,
-                radius = 2;
+                mx = 10;
 
         // Now add the chart column
-        d3.select("#datatable tbody tr").append("td")
+        //thead.append("th").text("");
+        d3.select("#datatable thead").append("th")
+                .attr("id", "xaxislabel")
+                .attr("width", width + "px");
+        thead.append("th").text("eventA");
+        thead.append("th").text("eventB");
+        thead.append("th").text("sig");
+        thead.append("th").text("result");
+        thead.append("th").text("low");
+        thead.append("th").text("high");
+
+        var tr = tbody.selectAll("tr")
+                .data(json)
+                .enter().append("tr");
+        d3.selectAll("#datatable tbody tr").append("td")
                 .attr("id", "chart")
-                .attr("width", width + "px")
-                .attr("rowspan", rows.length);
+                .attr("width", width + "px");
 
-        var chart = d3.select("#chart").append("svg")
-                .attr("class", "chart")
-                .attr("width", width)
-                .attr("height", height);
+        var chart = d3.selectAll("#chart").append("svg")
 
-        var maxMu = 0;
-        var minMu = Number.MAX_VALUE;
-        for (i=0; i < rows.length; i++) {
-            if (rows[i].mu > maxMu) { maxMu = rows[i].mu; }
-            if (rows[i].mu < minMu) { minMu = rows[i].mu; }
+                .attr("width", width+ "px")
+                .attr("height", 30+ "px");
+
+        var td = tr.selectAll("td")
+                .data(function(d) { return ['',d.eventA, d.eventB, d.sig, d.result, d.low, d.high]; })
+                .enter().append("td")
+                .text(function(d) { return d; });
+        var maxData,minData,meanPos,maxWidth;
+        var sdSpan=[],
+            labelPosArr=[],
+            maxArr=[],
+            minArr =[];
+
+        json.forEach(function(element,index,array){
+            var max = Math.max(element.result,element.high);
+            var min = Math.min(element.result,element.low);
+            maxArr.push(max);
+            minArr.push(min);
+            sdSpan.push(d3.round((element.mean - min)/element.sd));
+            sdSpan.push(d3.round((max -element.mean)/element.sd));
+        });
+        maxData = d3.max(maxArr);
+        minData = d3.min(minArr);
+        meanPos = (maxData+minData)*0.5;
+        labelPosArr.push(meanPos);//push mean pos into array
+        maxWidth =d3.round((maxData-meanPos)/d3.max(sdSpan));
+        for(var i = 1; i < 4; ++i)
+        {
+            labelPosArr.unshift(d3.round(meanPos - i * maxWidth));
         }
-
-        var dates = rows.map(function(t) { return t.dt; });
-
+        for(var i= 1; i < 4;++i)
+        {
+            labelPosArr.push(d3.round(meanPos+i*maxWidth));
+        }
         var xscale = d3.scale.linear()
-                .domain([minMu, maxMu])
-                .range([mx, width-mx])
-                .nice();
+                .domain([minData,maxData])
+                .range([0, 300]);
+        var tickLabels = ['3'+'\u03c3','2'+'\u03c3','\u03c3','\u03BC','\u03c3','2'+'\u03c3','3'+'\u03c3'];
+        var xAxis = d3.svg.axis()
+                        .scale(xscale)
+                        .orient("top")
+                        .tickValues(labelPosArr)
+                        .tickSize(2,0)
+                    .tickFormat(function(d,i){ return tickLabels[i] });
+        d3.select("#xaxislabel").append("svg")
+                                    .attr("width", width+ "px")
+                                    .attr("height",30+ "px")
+        .append("g").attr("class", "axis")
+                .attr("width", width+ "px")
+                .attr("height",30+ "px")
+                .attr("transform", "translate(0,30)")
+                .call(xAxis);
 
-        var yscale = d3.scale.ordinal()
-                .domain(dates)
-                .rangeBands([0, height]);
+//        chart.selectAll(".xaxistick")
+//                .data(xscale.ticks(2))
+//                .enter().append("line")
+//                .attr("x1", function(d) { return xscale(d); })
+//                .attr("x2", function(d) { return xscale(d); })
+//                .attr("y1", 10)
+//                .attr("y2", height)
+//                .attr("stroke", "#eee")
+//                .attr("stroke-width", 1);
 
-        chart.selectAll(".xaxislabel")
-                .data(xscale.ticks(2))
-                .enter().append("text")
-                .attr("class", "xaxislabel")
-                .attr("x", function(d) { return xscale(d); })
-                .attr("y", 10)
-                .attr("text-anchor", "middle")
-                .text(String)
-
-        chart.selectAll(".xaxistick")
-                .data(xscale.ticks(2))
-                .enter().append("line")
-                .attr("x1", function(d) { return xscale(d); })
-                .attr("x2", function(d) { return xscale(d); })
-                .attr("y1", 10)
-                .attr("y2", height)
-                .attr("stroke", "#eee")
-                .attr("stroke-width", 1);
-
-        chart.selectAll(".line")
-                .data(rows)
-                .enter().append("line")
-                .attr("x1", function(d) { return xscale(d.mu); })
-                .attr("y1", function(d) { return yscale(d.dt) + yscale.rangeBand()/2; })
-                .attr("x2", function(d,i) { return rows[i+1] ? xscale(rows[i+1].mu) : xscale(d.mu); })
-                .attr("y2", function(d,i) { return rows[i+1] ? yscale(rows[i+1].dt) + yscale.rangeBand()/2 : yscale(d.dt) + yscale.rangeBand()/2; })
-                .attr("stroke", "#777")
-                .attr("stroke-width", 1);
-
-        var pt = chart.selectAll(".pt")
-                .data(rows)
-                .enter().append("g")
-                .attr("class", "pt")
-                .attr("transform", function(d) { return "translate(" + xscale(d.mu) + "," + (yscale(d.dt) + yscale.rangeBand()/2) + ")"; });
-
-        pt.append("circle")
-                .attr("cx", 0)
-                .attr("cy", 0)
-                .attr("r", radius)
-                .attr("opacity", .5)
-                .attr("fill", "#ff0000");
+//        chart.selectAll(".line")
+//                .data(json)
+//                .enter().append("line")
+//                .attr("x1", function(d) { return xscale(d.mu); })
+//                .attr("y1", function(d) { return yscale(d.dt) + yscale.rangeBand()/2; })
+//                .attr("x2", function(d,i) { return rows[i+1] ? xscale(rows[i+1].mu) : xscale(d.mu); })
+//                .attr("y2", function(d,i) { return rows[i+1] ? yscale(rows[i+1].dt) + yscale.rangeBand()/2 : yscale(d.dt) + yscale.rangeBand()/2; })
+//                .attr("stroke", "#777")
+//                .attr("stroke-width", 1);
+//
+//        var pt = chart.selectAll(".pt")
+//                .data(rows)
+//                .enter().append("g")
+//                .attr("class", "pt")
+//                .attr("transform", function(d) { return "translate(" + xscale(d.mu) + "," + (yscale(d.dt) + yscale.rangeBand()/2) + ")"; });
+//
+//        pt.append("circle")
+//                .attr("cx", 0)
+//                .attr("cy", 0)
+//                .attr("r", radius)
+//                .attr("opacity", .5)
+//                .attr("fill", "#ff0000");
 
     });
+
+
+
+
+
+
+
 </script>
 </body>
 </html>
