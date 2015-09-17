@@ -142,9 +142,64 @@
 
             }
 
-
+            barData.sig=element.sig;
             barArr.push(barData);
         });
+        /*TODO:chart.selectAll("rect").data(barData)
+                                        .enter()
+                                        .append("rect")
+                                        .attr("x", function(d){return d.x;})
+                                        .attr("y", 0)
+                                        .attr("width", function(d){return d.width;)
+                                        .attr("height", 30)
+                                        .style("fill",function(d){
+                                        if (d.sig =="R"){return "url(#" + linearGradientR.attr("id") + ")"}
+                                        else if (d.sig =="L"){return "url(#" + linearGradientR.attr("id") + ")"}
+                                        else{return b;}})
+                                        .on("mouseover",function(d){
+                                            d3.select(this)
+                                                    .style("fill","yellow");
+                                        })
+                                        .on("mouseout",function(d){
+                                            d3.select(this)
+                                                    .style("fill","url(#" + linearGradient.attr("id") + ")");
+                                        });
+*/
+        //定义一个线性渐变
+        var a = d3.rgb(255,0,0);	//红色
+        var b = d3.rgb(0,255,0);	//绿色
+        var defs = chart.append("defs");
+
+        var linearGradientR = defs.append("linearGradient")
+                .attr("id","linearColor")
+                .attr("x1","0%")
+                .attr("y1","0%")
+                .attr("x2","100%")
+                .attr("y2","0%");
+
+        linearGradientR.append("stop")
+                .attr("offset","0%")
+                .style("stop-color",a.toString());
+
+        linearGradientR.append("stop")
+                .attr("offset","100%")
+                .style("stop-color",b.toString());
+
+//添加一个矩形，并应用线性渐变
+        var colorRect = svg.append("rect")
+                .attr("x", 15)
+                .attr("y", 200)
+                .attr("width", 200)
+                .attr("height", 30)
+                .style("fill","url(#" + linearGradient.attr("id") + ")")
+                .on("mouseover",function(d){
+                    d3.select(this)
+                            .style("fill","yellow");
+                })
+                .on("mouseout",function(d){
+                    d3.select(this)
+                            .style("fill","url(#" + linearGradient.attr("id") + ")");
+                });
 
         //append axis
         d3.select("#xaxislabel").append("svg")
