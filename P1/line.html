@@ -25,7 +25,7 @@
                 mx = 10;
 
         // Now add the chart column
-        //thead.append("th").text("");
+
         d3.select("#datatable thead").append("th")
                 .attr("id", "xaxislabel")
                 .attr("width", width + "px");
@@ -44,9 +44,8 @@
                 .attr("width", width + "px");
 
         var chart = d3.selectAll("#chart").append("svg")
-
-                .attr("width", width+ "px")
-                .attr("height", 30+ "px");
+                .attr("width", width + "px")
+                .attr("height", 30 + "px");
 
         var td = tr.selectAll("td")
                 .data(function(d) { return ['',d.eventA, d.eventB, d.sig, d.result, d.low, d.high]; })
@@ -56,7 +55,8 @@
         var sdSpan=[],
             labelPosArr=[],
             maxArr=[],
-            minArr =[];
+            minArr=[],
+            barArr=[];
 
         json.forEach(function(element,index,array){
             var max = Math.max(element.result,element.high);
@@ -71,14 +71,17 @@
         meanPos = (maxData+minData)*0.5;
         labelPosArr.push(meanPos);//push mean pos into array
         maxWidth =d3.round((maxData-meanPos)/d3.max(sdSpan));
+
         for(var i = 1; i < 4; ++i)
         {
             labelPosArr.unshift(d3.round(meanPos - i * maxWidth));
+            //unshift can push element in front of an array
         }
         for(var i= 1; i < 4;++i)
         {
             labelPosArr.push(d3.round(meanPos+i*maxWidth));
         }
+
         var xscale = d3.scale.linear()
                 .domain([minData,maxData])
                 .range([0, 300]);
@@ -89,15 +92,69 @@
                         .tickValues(labelPosArr)
                         .tickSize(2,0)
                     .tickFormat(function(d,i){ return tickLabels[i] });
+
+        json.forEach(function(element,index,array) {
+            var barData={};
+            barData.y = 30 ;//*(index+1)
+            barData.height = 30;
+            var dataWidth= element.result- element.mean;
+            var dataSpan = dataWidth/element.sd;
+            var x;
+            //TODO:optimize the following nested if code block into a helper function
+            if (dataWidth > 0){
+               if (dataSpan <= 3) {
+                   x = d3.scale.linear()
+                           .domain([element.mean, element.high])
+                           .range([xscale(meanPos), xscale(labelPosArr[labelPosArr.length-1])]);
+                   //barData.width = x(element.result) - xscale(meanPos);
+
+               } else {
+                   x = d3.scale.linear()
+                           .domain([element.high, maxData])
+                           .range([xscale(labelPosArr[labelPosArr.length-1]), 300]);
+                   //barData.width =x(element.result)- xscale(meanPos);
+
+               }
+                barData.x = d3.round(xscale(meanPos));
+                barData.width = d3.round(x(element.result)- barData.x);
+            } else {
+                if (Math.abs(dataSpan) <= 3) {
+                    x = d3.scale.linear()
+                            .domain([element.low, element.mean])
+                            .range([xscale(labelPosArr[0]), xscale(meanPos)]);
+//                    barData.x = x(element.result);
+//                    barData.width = xscale(meanPos) -barData.x;
+
+
+
+
+                } else {
+                    x = d3.scale.linear()
+                            .domain([minData, element.low])
+                            .range([0, xscale(labelPosArr[0])]);
+//                    barData.x = x(element.result);
+//                    barData.width = xscale(meanPos) - barData.x;
+
+
+                }
+                barData.x = d3.round(x(element.result));
+                barData.width = d3.round(xscale(meanPos) - barData.x);
+
+            }
+
+
+            barArr.push(barData);
+        });
+
+        //append axis
         d3.select("#xaxislabel").append("svg")
-                                    .attr("width", width+ "px")
-                                    .attr("height",30+ "px")
-        .append("g").attr("class", "axis")
+                .attr("width", width + "px")
+                .attr("height",30 + "px")
+                .append("g").attr("class", "axis")
                 .attr("width", width+ "px")
                 .attr("height",30+ "px")
                 .attr("transform", "translate(0,30)")
                 .call(xAxis);
-
 //        chart.selectAll(".xaxistick")
 //                .data(xscale.ticks(2))
 //                .enter().append("line")

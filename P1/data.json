@@ -27,8 +27,8 @@
       "sd": 1000,
       "sig":""
       }, {
-      "eventA":"name3",
-      "eventB":"name4",
+      "eventA":"name7",
+      "eventB":"name8",
       "result": 30567,
       "low": 31567,
       "high": 34567,
@@ -36,8 +36,8 @@
       "sd": 500,
       "sig":"L"
     }, {
-      "eventA":"name3",
-      "eventB":"name4",
+      "eventA":"name9",
+      "eventB":"name10",
       "result": 28900,
       "low": 28800,
       "high": 31200,
