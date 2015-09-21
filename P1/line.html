@@ -77,7 +77,7 @@
         }
         for(var i= 1; i < 4;++i)
         {
-            labelPosArr.push(d3.round(meanPos+i*maxWidth));
+            labelPosArr.push(d3.round(meanPos + i*maxWidth));
         }
 
         var xscale = d3.scale.linear()
@@ -97,50 +97,17 @@
             barData.height = 30;
             var dataWidth= element.result- element.mean;
             var dataSpan = dataWidth/element.sd;
-            var x;
+            var scaleSpan = xscale(labelPosArr[1])-xscale(labelPosArr[0]);
             //TODO:optimize the following nested if code block into a helper function
             if (dataWidth > 0){
-               if (dataSpan <= 3) {
-                   x = d3.scale.linear()
-                           .domain([element.mean, element.high])
-                           .range([xscale(meanPos), xscale(labelPosArr[labelPosArr.length-1])]);
-                   //barData.width = x(element.result) - xscale(meanPos);
-
-               } else {
-                   x = d3.scale.linear()
-                           .domain([element.high, maxData])
-                           .range([xscale(labelPosArr[labelPosArr.length-1]), 300]);
-                   //barData.width =x(element.result)- xscale(meanPos);
-
-               }
-                barData.x = d3.round(xscale(meanPos));
-                barData.width = d3.round(x(element.result)- barData.x);
+                barData.x = xscale(meanPos);
+                barData.width =Math.abs(dataSpan)*scaleSpan;
             } else {
-                if (Math.abs(dataSpan) <= 3) {
-                    x = d3.scale.linear()
-                            .domain([element.low, element.mean])
-                            .range([xscale(labelPosArr[0]), xscale(meanPos)]);
-//                    barData.x = x(element.result);
-//                    barData.width = xscale(meanPos) -barData.x;
-
-
-
-
-                } else {
-                    x = d3.scale.linear()
-                            .domain([minData, element.low])
-                            .range([0, xscale(labelPosArr[0])]);
-//                    barData.x = x(element.result);
-//                    barData.width = xscale(meanPos) - barData.x;
-
-
-                }
-                barData.x = d3.round(x(element.result));
-                barData.width = d3.round(xscale(meanPos) - barData.x);
-
+                barData.x = xscale(meanPos)-Math.abs(dataSpan)*scaleSpan;
+                barData.width =Math.abs(dataSpan)*scaleSpan ;
             }
-
-            barData.sig=element.sig;
+            barData.result = element.result;
+            barData.sig = element.sig;
             barArr.push(barData);
         });
 
@@ -148,13 +115,13 @@
         //two type :L-R:G-R L-R:R-G
         var chart = d3.selectAll("#chart").data(barArr).append("svg")
                 .attr("width", width + "px")
-                .attr("height", 30 + "px");
+                .attr("height", 20 + "px");
         var a = d3.rgb(255,0,0);	//red
         var b = d3.rgb(0,255,0);	//green
         var defs = chart.append("defs");
 
         var linearGradientR = defs.append("linearGradient")
-                .attr("id","linearColor")
+                .attr("id","linearColorR")
                 .attr("x1","0%")
                 .attr("y1","0%")
                 .attr("x2","100%")
@@ -162,14 +129,14 @@
 
         linearGradientR.append("stop")
                 .attr("offset","0%")
-                .style("stop-color",a.toString());
+                .style("stop-color",b.toString());
 
         linearGradientR.append("stop")
                 .attr("offset","100%")
-                .style("stop-color",b.toString());
+                .style("stop-color",a.toString());
 
         var linearGradientL = defs.append("linearGradient")
-                .attr("id","linearColor")
+                .attr("id","linearColorL")
                 .attr("x1","0%")
                 .attr("y1","0%")
                 .attr("x2","100%")
@@ -177,11 +144,11 @@
 
         linearGradientL.append("stop")
                 .attr("offset","0%")
-                .style("stop-color",b.toString());
+                .style("stop-color",a.toString());
 
         linearGradientL.append("stop")
                 .attr("offset","100%")
-                .style("stop-color",a.toString());
+                .style("stop-color",b.toString());
 
         chart.append("rect")
                 .attr("x", function(d){return d.x;})
@@ -189,27 +156,11 @@
                 .attr("width", function(d){return d.width;})
                 .attr("height", 30)
                 .style("fill",function(d){
-                    if (d.sig =="R"){return "url(#" + linearGradientR.attr("id") + ")"}
-                    else if (d.sig =="L"){return "url(#" + linearGradientR.attr("id") + ")"}
+                    if (d.sig =="H"){return "url(#" + linearGradientR.attr("id") + ")"}
+                    else if (d.sig =="L"){return "url(#" + linearGradientL.attr("id") + ")"}
                     else{return b;}});
 
-//添加一个矩形，并应用线性渐变
-//        var colorRect = svg.append("rect")
-//                .attr("x", 15)
-//                .attr("y", 200)
-//                .attr("width", 200)
-//                .attr("height", 30)
-//                .style("fill","url(#" + linearGradient.attr("id") + ")")
-//                .on("mouseover",function(d){
-//                    d3.select(this)
-//                            .style("fill","yellow");
-//                })
-//                .on("mouseout",function(d){
-//                    d3.select(this)
-//                            .style("fill","url(#" + linearGradient.attr("id") + ")");
-//                });
 
-        //append axis
         d3.select("#xaxislabel").append("svg")
                 .attr("width", width + "px")
                 .attr("height",30 + "px")
@@ -218,38 +169,7 @@
                 .attr("height",30+ "px")
                 .attr("transform", "translate(0,30)")
                 .call(xAxis);
-//        chart.selectAll(".xaxistick")
-//                .data(xscale.ticks(2))
-//                .enter().append("line")
-//                .attr("x1", function(d) { return xscale(d); })
-//                .attr("x2", function(d) { return xscale(d); })
-//                .attr("y1", 10)
-//                .attr("y2", height)
-//                .attr("stroke", "#eee")
-//                .attr("stroke-width", 1);
 
-//        chart.selectAll(".line")
-//                .data(json)
-//                .enter().append("line")
-//                .attr("x1", function(d) { return xscale(d.mu); })
-//                .attr("y1", function(d) { return yscale(d.dt) + yscale.rangeBand()/2; })
-//                .attr("x2", function(d,i) { return rows[i+1] ? xscale(rows[i+1].mu) : xscale(d.mu); })
-//                .attr("y2", function(d,i) { return rows[i+1] ? yscale(rows[i+1].dt) + yscale.rangeBand()/2 : yscale(d.dt) + yscale.rangeBand()/2; })
-//                .attr("stroke", "#777")
-//                .attr("stroke-width", 1);
-//
-//        var pt = chart.selectAll(".pt")
-//                .data(rows)
-//                .enter().append("g")
-//                .attr("class", "pt")
-//                .attr("transform", function(d) { return "translate(" + xscale(d.mu) + "," + (yscale(d.dt) + yscale.rangeBand()/2) + ")"; });
-//
-//        pt.append("circle")
-//                .attr("cx", 0)
-//                .attr("cy", 0)
-//                .attr("r", radius)
-//                .attr("opacity", .5)
-//                .attr("fill", "#ff0000");
 
     });
 

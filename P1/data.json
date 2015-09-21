@@ -20,7 +20,7 @@
     }, {
       "eventA":"name5",
       "eventB":"name6",
-      "result": 12000,
+      "result": 12050,
       "low": 11000,
       "high": 15000,
       "mean": 12000,
