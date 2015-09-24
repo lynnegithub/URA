@@ -116,8 +116,9 @@
         var chart = d3.selectAll("#chart").data(barArr).append("svg")
                 .attr("width", width + "px")
                 .attr("height", 20 + "px");
-        var a = d3.rgb(255,0,0);	//red
-        var b = d3.rgb(0,255,0);	//green
+        var a = d3.rgb(186,2,2);	//red
+        var b = d3.rgb(13,168,13);	//green
+        var c = d3.rgb(232,218,31);	//yellow
         var defs = chart.append("defs");
 
         var linearGradientR = defs.append("linearGradient")
@@ -130,6 +131,10 @@
         linearGradientR.append("stop")
                 .attr("offset","0%")
                 .style("stop-color",b.toString());
+
+        linearGradientR.append("stop")
+                .attr("offset",function(d){return d3.round(2*maxWidth/d.width)+"%";})
+                .style("stop-color",c.toString());
 
         linearGradientR.append("stop")
                 .attr("offset","100%")
@@ -145,6 +150,10 @@
         linearGradientL.append("stop")
                 .attr("offset","0%")
                 .style("stop-color",a.toString());
+
+        linearGradientL.append("stop")
+                .attr("offset",function(d){return d3.round(100-((2*maxWidth)/d.width))+"%";})
+                .style("stop-color",c.toString());
 
         linearGradientL.append("stop")
                 .attr("offset","100%")
