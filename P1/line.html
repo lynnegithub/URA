@@ -83,6 +83,7 @@
         var xscale = d3.scale.linear()
                 .domain([minData,maxData])
                 .range([0, 300]);
+        var scaleSpan = xscale(labelPosArr[1])-xscale(labelPosArr[0]);
         var tickLabels = ['3'+'\u03c3','2'+'\u03c3','\u03c3','\u03BC','\u03c3','2'+'\u03c3','3'+'\u03c3'];
         var xAxis = d3.svg.axis()
                         .scale(xscale)
@@ -97,7 +98,7 @@
             barData.height = 30;
             var dataWidth= element.result- element.mean;
             var dataSpan = dataWidth/element.sd;
-            var scaleSpan = xscale(labelPosArr[1])-xscale(labelPosArr[0]);
+
             //TODO:optimize the following nested if code block into a helper function
             if (dataWidth > 0){
                 barData.x = xscale(meanPos);
@@ -112,7 +113,7 @@
         });
 
         //define linear gradinents
-        //two type :L-R:G-R L-R:R-G
+        //two type :L-R:G-Y-R L-R:R-Y-G
         var chart = d3.selectAll("#chart").data(barArr).append("svg")
                 .attr("width", width + "px")
                 .attr("height", 20 + "px");
@@ -133,7 +134,7 @@
                 .style("stop-color",b.toString());
 
         linearGradientR.append("stop")
-                .attr("offset",function(d){return d3.round(2*maxWidth/d.width)+"%";})
+                .attr("offset",function(d){return (200*scaleSpan/d.width)+"%";})
                 .style("stop-color",c.toString());
 
         linearGradientR.append("stop")
@@ -152,7 +153,7 @@
                 .style("stop-color",a.toString());
 
         linearGradientL.append("stop")
-                .attr("offset",function(d){return d3.round(100-((2*maxWidth)/d.width))+"%";})
+                .attr("offset",function(d){return (100-(200*scaleSpan/d.width))+"%";})
                 .style("stop-color",c.toString());
 
         linearGradientL.append("stop")
@@ -167,7 +168,8 @@
                 .style("fill",function(d){
                     if (d.sig =="H"){return "url(#" + linearGradientR.attr("id") + ")"}
                     else if (d.sig =="L"){return "url(#" + linearGradientL.attr("id") + ")"}
-                    else{return b;}});
+                    else{return b;}
+                });
 
 
         d3.select("#xaxislabel").append("svg")
@@ -179,6 +181,15 @@
                 .attr("transform", "translate(0,30)")
                 .call(xAxis);
 
+        chart.selectAll(".xaxistick")
+                .data(labelPosArr)
+                .enter().append("line")
+                .attr("x1", function(d) { return xscale(d); })
+                .attr("x2", function(d) { return xscale(d); })
+                .attr("y1", -5)
+                .attr("y2", 35)
+                .attr("stroke", "#FFFFFF")
+                .attr("stroke-width", 0.5);
 
     });
 
