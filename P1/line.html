@@ -46,7 +46,7 @@
 
 
         var td = tr.selectAll("td")
-                .data(function(d) { return ['',d.eventA, d.eventB, d.sig, d.result, d.low, d.high]; })
+                            .data(function(d) { return ['',d.eventA, d.eventB, d.sig, d3.round(d.result,3), d3.round(d.low,3), d3.round(d.high,3)]; })
                 .enter().append("td")
                 .text(function(d) { return d; });
         var maxData,minData,meanPos,maxWidth;

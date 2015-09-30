@@ -44,6 +44,42 @@
       "mean": 30000,
       "sd": 400,
       "sig":""
+    }, {
+      "eventA":"SCHED_SET/89",
+      "eventB":"SCHED_SET/89",
+      "result": 21973.5,
+      "low": 0,
+      "high": 15280.4533679273,
+      "mean": 7219.75,
+      "sd": 2686.901123,
+      "sig":"H"
+    },{
+      "eventA":"SYNC_MUTEX_UNLOCK/81",
+      "eventB":"SYNC_MUTEX_UNLOCK/81",
+      "result": 18984346.673913,
+      "low": 0,
+      "high": 284930920.184171,
+      "mean": 30048921.2987465,
+      "sd": 84960666.2951438,
+      "sig":""
+    },{
+      "eventA":"0x00000022",
+      "eventB":"0x00000022",
+      "result": 5583581.58579882,
+      "low": 0,
+      "high": 36552079.4084504,
+      "mean": 5417567.58328415,
+      "sd": 10378170.6083887,
+      "sig":""
+    },{
+      "eventA":"MSG_DELIVER_EVENT/21",
+      "eventB":"MSG_DELIVER_EVENT/21",
+      "result": 58397199.1428571,
+      "low": 0,
+      "high": 299808281.023929,
+      "mean": 41373155.717803,
+      "sd": 86145041.7687088,
+      "sig":""
     }
 
   ]
