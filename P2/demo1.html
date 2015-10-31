@@ -1,18 +1,15 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
 <style>
-    svg{
-        margin-left:auto; margin-right:auto; display:block;
-    }
 
     .node {
         font: 300 11px "Helvetica Neue", Helvetica, Arial, sans-serif;
         fill: #bbb;
     }
 
-    /*.node:hover {*/
-        /*fill: #000;*/
-    /*}*/
+    .node:hover {
+        fill: #000;
+    }
 
     .link {
         stroke: steelblue;
@@ -22,30 +19,30 @@
     }
 
     .node:hover,
-    .node--corr,
-    .node--ncorr {
+    .node--source,
+    .node--target {
         font-weight: 700;
     }
 
-    .node--corr {
+    .node--source {
         fill: #2ca02c;
     }
 
-    .node--ncorr {
+    .node--target {
         fill: #d62728;
     }
 
-    .link--ncorr,
-    .link--corr {
+    .link--source,
+    .link--target {
         stroke-opacity: 1;
-        stroke-width: 1px;
+        stroke-width: 2px;
     }
 
-    .link--ncorr {
+    .link--source {
         stroke: #d62728;
     }
 
-    .link--corr {
+    .link--target {
         stroke: #2ca02c;
     }
 
@@ -60,9 +57,8 @@
 
     var cluster = d3.layout.cluster()
             .size([360, innerRadius])
-            .sort(function comparator(a, b) {
-                return d3.ascending(a.name, b.name);
-            });
+            .sort(null)
+            .value(function(d) { return d.size; });
 
     var bundle = d3.layout.bundle();
 
@@ -77,46 +73,58 @@
             .attr("height", diameter)
             .append("g")
             .attr("transform", "translate(" + radius + "," + radius + ")");
+
     var link = svg.append("g").selectAll(".link"),
-            node =svg.append("g").selectAll(".node");
-    d3.json("corr.json", function(error, classes) {
+            node = svg.append("g").selectAll(".node");
+
+    d3.json("data.json", function(error, classes) {
         if (error) throw error;
-        var nodes = cluster.nodes(packageHierarchy(classes)).filter(function(n){return n.name}),
+
+        var nodes = cluster.nodes(packageHierarchy(classes)),
                 links = packageImports(nodes);
 
         link = link
                 .data(bundle(links))
                 .enter().append("path")
-                .attr("class", "link")
                 .each(function(d) { d.source = d[0], d.target = d[d.length - 1]; })
+                .attr("class", "link")
                 .attr("d", line);
 
         node = node
-                .data(nodes)
+                .data(nodes.filter(function(n) { return !n.children; }))
                 .enter().append("text")
                 .attr("class", "node")
                 .attr("dy", ".31em")
                 .attr("transform", function(d) { return "rotate(" + (d.x - 90) + ")translate(" + (d.y + 8) + ",0)" + (d.x < 180 ? "" : "rotate(180)"); })
                 .style("text-anchor", function(d) { return d.x < 180 ? "start" : "end"; })
-                .text(function(d) { return d.name; });
-        link
-                .classed("link--corr", function(l) { return l.source.corr===true; } )
-                .classed("link--ncorr", function(l) { return l.source.corr ===false;});
-       /*uncomment if we want to color the nodes
-       node
-                .classed("node--corr", function(n) { return n.corr===true; })
-                .classed("node--ncorr", function(n) { return n.corr===false; });*/
-
-               // .on("mouseover", mouseovered)
-               // .on("mouseout", mouseouted);
-
+                .text(function(d) { return d.key; })
+                .on("mouseover", mouseovered)
+                .on("mouseout", mouseouted);
     });
-    var mouseovered = function mouseovered(d) {
 
+    function mouseovered(d) {
+        node
+                .each(function(n) { n.target = n.source = false; });
+
+        link
+                .classed("link--target", function(l) { if (l.target === d) return l.source.source = true; })
+                .classed("link--source", function(l) { if (l.source === d) return l.target.target = true; })
+                .filter(function(l) { return l.target === d || l.source === d; })
+                .each(function() { this.parentNode.appendChild(this); });
+
+        node
+                .classed("node--target", function(n) { return n.target; })
+                .classed("node--source", function(n) { return n.source; });
     }
 
     function mouseouted(d) {
+        link
+                .classed("link--target", false)
+                .classed("link--source", false);
 
+        node
+                .classed("node--target", false)
+                .classed("node--source", false);
     }
 
     d3.select(self.frameElement).style("height", diameter + "px");
@@ -124,30 +132,31 @@
     // Lazily construct the package hierarchy from class names.
     function packageHierarchy(classes) {
         var map = {};
-        map.name = "";//as root
-        map.children = [];
+
+        function find(name, data) {
+            var node = map[name], i;
+            if (!node) {
+                node = map[name] = data || {name: name, children: []};
+                if (name.length) {
+                    node.parent = find(name.substring(0, i = name.lastIndexOf(".")));
+                    node.parent.children.push(node);
+                    node.key = name.substring(i + 1);
+                }
+            }
+            return node;
+        }
 
         classes.forEach(function(d) {
-            var node={};
-            var nodeC={};
-            node.name= d.eventA;
-            node.corr= d.corr;
-            node.related = d.eventB;
-            nodeC.name= d.eventB;
-            nodeC.corr= d.corr;
-            nodeC.related = d.eventA;
-            map.children.push(node);
-            map.children.push(nodeC);
-
+            find(d.name, d);
         });
 
-        return map;
+        return map[""];
     }
 
     // Return a list of imports for the given array of nodes.
     function packageImports(nodes) {
-        var map = {};
-        var imports = [];
+        var map = {},
+                imports = [];
 
         // Compute a map from name to node.
         nodes.forEach(function(d) {
@@ -156,11 +165,9 @@
 
         // For each import, construct a link from the source to target node.
         nodes.forEach(function(d) {
-           // if(d.children) d.children.forEach(function(i)
-          //  {
-                imports.push({source: map[d.name], target: map[d.related]});
-          ///  });
-
+            if (d.imports) d.imports.forEach(function(i) {
+                imports.push({source: map[d.name], target: map[i]});
+            });
         });
 
         return imports;
