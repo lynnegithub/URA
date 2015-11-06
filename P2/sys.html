@@ -79,6 +79,18 @@
             .attr("transform", "translate(" + radius + "," + radius + ")");
     var link = svg.append("g").selectAll(".link"),
             node =svg.append("g").selectAll(".node");
+    // Define the div for the tooltip
+    var div = d3.select("body").append("div")
+            .attr("class", "tooltip")
+            .style("opacity", 0)
+            .text("a simple tooltip");
+    var tooltip = d3.select("body")
+            .append("div")
+            .style("position", "absolute")
+            .style("z-index", "10")
+            .style("visibility", "hidden")
+            .text("a simple tooltip");
+
     d3.json("corr.json", function(error, classes) {
         if (error) throw error;
         var nodes = cluster.nodes(packageHierarchy(classes)).filter(function(n){return n.name}),
@@ -102,26 +114,36 @@
         link
                 .classed("link--corr", function(l) { return l.source.corr===true; } )
                 .classed("link--ncorr", function(l) { return l.source.corr ===false;});
+
        /*uncomment if we want to color the nodes
        node
                 .classed("node--corr", function(n) { return n.corr===true; })
                 .classed("node--ncorr", function(n) { return n.corr===false; });*/
 
-               // .on("mouseover", mouseovered)
-               // .on("mouseout", mouseouted);
+               node .on("mouseover", function(){return tooltip.style("visibility", "visible");})
+                       .on("mousemove", function(){return tooltip.style("top", (event.pageY-10)+"px").style("left",(event.pageX+10)+"px");})
+                       .on("mouseout", function(){return tooltip.style("visibility", "hidden");});
 
     });
     var mouseovered = function mouseovered(d) {
+        div.transition()
+                .duration(200)
+                .style("opacity", .9);
+        div.html(d.eventA + "<br/>" )
+                .style("left", (d3.event.pageX) + "px")
+                .style("top", (d3.event.pageY - 28) + "px");
 
     }
 
     function mouseouted(d) {
-
+        div.transition()
+                .duration(500)
+                .style("opacity", 0);
     }
 
     d3.select(self.frameElement).style("height", diameter + "px");
 
-    // Lazily construct the package hierarchy from class names.
+
     function packageHierarchy(classes) {
         var map = {};
         map.name = "";//as root
@@ -156,11 +178,8 @@
 
         // For each import, construct a link from the source to target node.
         nodes.forEach(function(d) {
-           // if(d.children) d.children.forEach(function(i)
-          //  {
                 imports.push({source: map[d.name], target: map[d.related]});
-          ///  });
-
+            //notes: this will incur dup node relationship(two directions) and leave it for now
         });
 
         return imports;
