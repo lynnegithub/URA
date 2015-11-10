@@ -6,8 +6,9 @@
     }
 
     .node {
-        font: 300 11px "Helvetica Neue", Helvetica, Arial, sans-serif;
+        font: 300 23px "Helvetica Neue", Helvetica, Arial, sans-serif;
         fill: #bbb;
+        cursor: pointer;
     }
 
     /*.node:hover {*/
@@ -48,13 +49,25 @@
     .link--corr {
         stroke: #2ca02c;
     }
-
+    div.tooltip {
+        position: absolute;
+        text-align: center;
+        width: 400px;
+        height: 500px;
+        padding: 2px;
+        font: 12px sans-serif;
+        background: lightsteelblue;
+        border: 0px;
+        border-radius: 8px;
+        pointer-events: none;
+        z-index: 1000;
+    }
 </style>
 <body>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
 <script>
 
-    var diameter = 960,
+    var diameter = 1000,
             radius = diameter / 2,
             innerRadius = radius - 120;
 
@@ -73,23 +86,21 @@
             .angle(function(d) { return d.x / 180 * Math.PI; });
 
     var svg = d3.select("body").append("svg")
-            .attr("width", diameter)
-            .attr("height", diameter)
+            .attr("width", diameter*1.1)
+            .attr("height", diameter*1.1)
             .append("g")
             .attr("transform", "translate(" + radius + "," + radius + ")");
     var link = svg.append("g").selectAll(".link"),
             node =svg.append("g").selectAll(".node");
     // Define the div for the tooltip
-    var div = d3.select("body").append("div")
-            .attr("class", "tooltip")
-            .style("opacity", 0)
-            .text("a simple tooltip");
+//    var div = d3.select("body").append("div")
+//            .attr("class", "tooltip")
+//            .style("opacity", 0)
+//            .text("a simple tooltip");
     var tooltip = d3.select("body")
             .append("div")
-            .style("position", "absolute")
-            .style("z-index", "10")
-            .style("visibility", "hidden")
-            .text("a simple tooltip");
+            .attr("class","tooltip")
+            .style("opacity", 0);
 
     d3.json("corr.json", function(error, classes) {
         if (error) throw error;
@@ -119,27 +130,66 @@
        node
                 .classed("node--corr", function(n) { return n.corr===true; })
                 .classed("node--ncorr", function(n) { return n.corr===false; });*/
+           d3.json("corr2.json", function(error, classes) {
+               tooltip = tooltip.append("svg").attr("width", 600)
+                       .attr("height", 800).append("g");
+               var dataA,dataB,corr,refCorr; /*= tooltip.select("g"),//.append("g").selectAll(".dataA"),
+                       dataB = tooltip.select("g"),//.append("g").selectAll(".dataB"),
+                       corr = tooltip.select("g"),//.append("g"),
+                       refCorr = tooltip.select("g");//.append("g");*/
+               var corrMap = dataMap(classes);//key,value pair key is event name value is an obj
 
-               node .on("mouseover", function(){return tooltip.style("visibility", "visible");})
-                       .on("mousemove", function(){return tooltip.style("top", (event.pageY-10)+"px").style("left",(event.pageX+10)+"px");})
-                       .on("mouseout", function(){return tooltip.style("visibility", "hidden");});
+
+               function mouseovered(d) {
+                   if(corr&&refCorr) {
+                       corr.remove();
+                       refCorr.remove();
+                   }
+
+                   var dataset = corrMap[d.name];
+                  // dataA=dataA.data(dataset).enter().append();
+                //   dataB=dataB.data(dataset).enter().append();
+                  // tooltip.selectAll(".dataA").remove();
+                  // tooltip.selectAll(".dataB").remove();
+
+                   corr = tooltip.selectAll(".corr").data(dataset)
+                           .enter().append("text")
+                           .attr("class", "corr")
+                           .attr("x", 20)
+                           .attr("y",25 )
+                           .text( function (dt) { return "corr: " + dt.corr; })
+                           .attr("font-family", "sans-serif")
+                           .attr("font-size", "20px")
+                           .attr("fill", "black");
+                   refCorr = tooltip.selectAll(".refCorr").data(dataset)
+                           .enter().append("text")
+                           .attr("class", "refCorr")
+                           .attr("x",20)
+                           .attr("y", 55)
+                           .text( function (dt) { return "refCorr: " + dt.refCorr; })
+                           .attr("font-family", "sans-serif")
+                           .attr("font-size", "20px")
+                           .attr("fill", "black");
+
+
+                   d3.select('.tooltip').transition()
+                           .duration(200).style("opacity", .9)
+                           .style("left", (d3.event.pageX+128) + "px")
+                           .style("top", (d3.event.pageY - 128) + "px");
+
+
+               }
+
+               function mouseouted(d) {
+
+                   d3.select('.tooltip').transition()
+                           .duration(200).style("opacity", 0);
+               }
+
+               node.on("mouseenter", mouseovered).on("mouseleave",mouseouted);
+           });
 
     });
-    var mouseovered = function mouseovered(d) {
-        div.transition()
-                .duration(200)
-                .style("opacity", .9);
-        div.html(d.eventA + "<br/>" )
-                .style("left", (d3.event.pageX) + "px")
-                .style("top", (d3.event.pageY - 28) + "px");
-
-    }
-
-    function mouseouted(d) {
-        div.transition()
-                .duration(500)
-                .style("opacity", 0);
-    }
 
     d3.select(self.frameElement).style("height", diameter + "px");
 
@@ -184,5 +234,29 @@
 
         return imports;
     }
+    function dataMap(classes) {
+        var map = [];
+
+
+        classes.forEach(function(element,index,array) {
+
+            var dataNodes={};
+            var temp=[];
+            dataNodes.corr=element.corr;
+            dataNodes.refCorr=element.refCorr;
+            dataNodes.dataA=element.dataA;
+            dataNodes.dataB=element.dataB;
+            if(element.hasOwnProperty('startAnomaly')){
+                dataNodes.startAnomaly=element.startAnomaly;
+                dataNodes.endAnomaly=element.endAnomaly;
+            }
+            temp.push(dataNodes);
+            map[element.eventA]=temp;
+            map[element.eventB]=temp;
+        });
+
+        return map;
+    }
+
 
 </script>
