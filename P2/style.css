@@ -1,100 +1,75 @@
-body {
-    font: 300 36px "Helvetica Neue";
-    height: 640px;
-    margin: 80px 160px 80px 160px;
-    overflow: hidden;
-    position: relative;
-    width: 960px;
+svg{
+    margin-left:auto; margin-right:auto; display:block;
 }
 
-a:link, a:visited {
-    color: #777;
-    text-decoration: none;
+.node {
+    font: 300 23px "Helvetica Neue", Helvetica, Arial, sans-serif;
+    fill: #808080;
+    cursor: pointer;
 }
 
-a:hover {
-    color: #666;
+.link {
+    stroke: steelblue;
+    stroke-opacity: .4;
+    fill: none;
+    pointer-events: none;
 }
 
-blockquote {
-    margin: 0;
+.node:hover,
+.node--corr,
+.node--ncorr {
+    font-weight: 700;
 }
 
-blockquote:before {
-    content: "“";
+.node--corr {
+    fill: #2ca02c;
+}
+
+.node--ncorr {
+    fill: #d62728;
+}
+
+.link--ncorr,
+.link--corr {
+    stroke-opacity: 1;
+    stroke-width: 1px;
+}
+
+.link--ncorr {
+    stroke: #d62728;
+}
+
+.link--corr {
+    stroke: #2ca02c;
+}
+div.tooltip {
     position: absolute;
-    left: -.4em;
+    text-align: center;
+    width: 450px;
+    height: 700px;
+    padding: 10px;
+    font: 12px sans-serif;
+    background: #E0FFFF;
+    border: 0px;
+    border-radius: 8px;
+    pointer-events: none;
+    z-index: 1000;
+}
+path {
+    stroke: steelblue;
+    stroke-width: 1;
+    fill: none;
+}
+rect{
+    fill:lightcoral;
+    opacity: 0.5;
 }
 
-blockquote:after {
-    content: "”";
-    position: absolute;
+.axis {
+    shape-rendering: crispEdges;
 }
 
-body > ul {
-    margin: 0;
-    padding: 0;
-}
-
-h1 {
-    font-size: 64px;
-}
-
-h1, h2, h3 {
-    font-weight: inherit;
-    margin: 0;
-}
-
-h2, h3 {
-    text-align: right;
-    font-size: inherit;
-    position: absolute;
-    bottom: 0;
-    right: 0;
-}
-
-h2 {
-    font-size: 24px;
-    position: absolute;
-}
-
-h3 {
-    bottom: -20px;
-    font-size: 18px;
-}
-
-.invert {
-    background: #1f1f1f;
-    color: #dcdccc;
-}
-
-.invert h2, .invert h3 {
-    color: #7f9f7f;
-}
-
-.string, .regexp {
-    color: #f39;
-}
-
-.keyword {
-    color: #00c;
-}
-
-.comment {
-    color: #777;
-    font-style: oblique;
-}
-
-.number {
-    color: #369;
-}
-
-.class, .special {
-    color: #1181B8;
-}
-
-body > svg {
-    position: absolute;
-    top: -80px;
-    left: -160px;
+.x.axis line,.x.axis path,.y.axis line, .y.axis path {
+    fill: none;
+    stroke: #000;
 }

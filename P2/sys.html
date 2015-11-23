@@ -1,69 +1,9 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
-<style>
-    svg{
-        margin-left:auto; margin-right:auto; display:block;
-    }
-
-    .node {
-        font: 300 23px "Helvetica Neue", Helvetica, Arial, sans-serif;
-        fill: #bbb;
-        cursor: pointer;
-    }
-
-    /*.node:hover {*/
-        /*fill: #000;*/
-    /*}*/
-
-    .link {
-        stroke: steelblue;
-        stroke-opacity: .4;
-        fill: none;
-        pointer-events: none;
-    }
-
-    .node:hover,
-    .node--corr,
-    .node--ncorr {
-        font-weight: 700;
-    }
-
-    .node--corr {
-        fill: #2ca02c;
-    }
-
-    .node--ncorr {
-        fill: #d62728;
-    }
-
-    .link--ncorr,
-    .link--corr {
-        stroke-opacity: 1;
-        stroke-width: 1px;
-    }
-
-    .link--ncorr {
-        stroke: #d62728;
-    }
-
-    .link--corr {
-        stroke: #2ca02c;
-    }
-    div.tooltip {
-        position: absolute;
-        text-align: center;
-        width: 400px;
-        height: 500px;
-        padding: 2px;
-        font: 12px sans-serif;
-        background: lightsteelblue;
-        border: 0px;
-        border-radius: 8px;
-        pointer-events: none;
-        z-index: 1000;
-    }
-</style>
-<body>
+<head>
+    <link rel="stylesheet" type="text/css" href="style.css">
+</head>
+<body></body>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
 <script>
 
@@ -93,10 +33,7 @@
     var link = svg.append("g").selectAll(".link"),
             node =svg.append("g").selectAll(".node");
     // Define the div for the tooltip
-//    var div = d3.select("body").append("div")
-//            .attr("class", "tooltip")
-//            .style("opacity", 0)
-//            .text("a simple tooltip");
+
     var tooltip = d3.select("body")
             .append("div")
             .attr("class","tooltip")
@@ -132,25 +69,22 @@
                 .classed("node--ncorr", function(n) { return n.corr===false; });*/
            d3.json("corr2.json", function(error, classes) {
                tooltip = tooltip.append("svg").attr("width", 600)
-                       .attr("height", 800).append("g");
-               var dataA,dataB,corr,refCorr; /*= tooltip.select("g"),//.append("g").selectAll(".dataA"),
-                       dataB = tooltip.select("g"),//.append("g").selectAll(".dataB"),
-                       corr = tooltip.select("g"),//.append("g"),
-                       refCorr = tooltip.select("g");//.append("g");*/
+                       .attr("height", 900).append("g");
+               var dataA,dataB,corr,refCorr;
+
                var corrMap = dataMap(classes);//key,value pair key is event name value is an obj
 
 
                function mouseovered(d) {
-                   if(corr&&refCorr) {
+                   //clean last time darwing
+                   if(corr && refCorr) {
                        corr.remove();
                        refCorr.remove();
+                       dataA.remove();
+                       dataB.remove();
                    }
 
                    var dataset = corrMap[d.name];
-                  // dataA=dataA.data(dataset).enter().append();
-                //   dataB=dataB.data(dataset).enter().append();
-                  // tooltip.selectAll(".dataA").remove();
-                  // tooltip.selectAll(".dataB").remove();
 
                    corr = tooltip.selectAll(".corr").data(dataset)
                            .enter().append("text")
@@ -161,20 +95,134 @@
                            .attr("font-family", "sans-serif")
                            .attr("font-size", "20px")
                            .attr("fill", "black");
+
                    refCorr = tooltip.selectAll(".refCorr").data(dataset)
                            .enter().append("text")
                            .attr("class", "refCorr")
-                           .attr("x",20)
+                           .attr("x", 20)
                            .attr("y", 55)
                            .text( function (dt) { return "refCorr: " + dt.refCorr; })
                            .attr("font-family", "sans-serif")
                            .attr("font-size", "20px")
                            .attr("fill", "black");
+                   //draw line chart
 
+                   var maxX_a = d3.max(dataset[0].dataA.time);
+                   var minX_a = d3.min(dataset[0].dataA.time);
+                   var maxY_a = d3.max(dataset[0].dataA.value);
+                   var maxX_b = d3.max(dataset[0].dataB.time);
+                   var minX_b = d3.min(dataset[0].dataB.time);
+                   var maxY_b = d3.max(dataset[0].dataB.value);
+
+                   var w = 320;
+                   var h_a = 220;
+                   var h_b = 220;
+                   var m = [10, 10, 10, 10];
+                   var xScale_a =  d3.scale.linear().domain([minX_a, maxX_a]).range([0, w]);
+                   var yScale_a =  d3.scale.linear().domain([0, maxY_a]).range([320, 100]);
+                   var xAxis_a = d3.svg.axis().scale(xScale_a).orient("bottom").tickSize(2,0);
+                   var yAxis_a = d3.svg.axis().scale(yScale_a).orient("left").tickSize(2,0).tickFormat(function(d){ return d3.round(d,1) });
+                   var xScale_b =  d3.scale.linear().domain([minX_b, maxX_b]).range([0, w]);
+                   var yScale_b =  d3.scale.linear().domain([0, maxY_b]).range([590, 370]);
+                   var xAxis_b = d3.svg.axis().scale(xScale_b).orient("bottom").tickSize(2,0);
+                   var yAxis_b = d3.svg.axis().scale(yScale_b).orient("left").ticks(5).tickSize(2,0).tickFormat(function(d){ return d3.round(d,1) });
+
+                   var lineA = d3.svg.line()
+                       // assign the X function to plot our line as we wish
+                           .x(function(d) {
+                               // verbose logging to show what's actually being done
+                               console.log('Plotting X value for data point: ' + d.time + ' to be at: ' + xScale_a(d.time) + ' using our xScale.');
+                               // return the X coordinate where we want to plot this datapoint
+                               return xScale_a(d.time);
+                           })
+                           .y(function(d) {
+                               // verbose logging to show what's actually being done
+                               console.log('Plotting Y value for data point: ' + d.value + ' to be at: ' + yScale_a(d.value) + " using our yScale.");
+                               // return the Y coordinate where we want to plot this datapoint
+                               return yScale_a(d.value);
+                           })
+                   var lineB = d3.svg.line()
+                       // assign the X function to plot our line as we wish
+                           .x(function(d) {
+                               // verbose logging to show what's actually being done
+                               //console.log('Plotting X value for data point: ' + d.time + ' to be at: ' + xScale_b(d.time) + ' using our xScale.');
+                               // return the X coordinate where we want to plot this datapoint
+                               return xScale_b(d.time);
+                           })
+                           .y(function(d) {
+                               // verbose logging to show what's actually being done
+                              // console.log('Plotting Y value for data point: ' + d.value + ' to be at: ' + yScale_b(d.value) + " using our yScale.");
+                               // return the Y coordinate where we want to plot this datapoint
+                               return yScale_b(d.value);
+                           })
+
+                   // Add an SVG element with the desired dimensions and margin.
+                   dataA = tooltip.append("svg:g")
+                           .attr("class","dataA")
+                           .attr("width", w )
+                           .attr("height", h_a)
+                           .attr("transform", "translate(22 ," + m[0] + ")");
+
+
+                   dataB = tooltip.append("svg:g")
+                           .attr("class","dataB")
+                           .attr("width", w )
+                           .attr("height", h_b)
+
+                           .attr("transform", "translate(22," + m[0] + ")");
+
+
+                   // Add the x-axis.
+                   dataA.append("svg:g")
+                           .attr("class", "x axis")
+                           .attr("transform", "translate(0,320)")
+                           .call(xAxis_a);
+                   // Add the x-axis.
+                   dataB.append("svg:g")
+                           .attr("class", "x axis")
+                           .attr("transform", "translate(0,590)")
+                           .call(xAxis_b);
+
+
+                   // Add the y-axis to the left
+                   dataA.append("svg:g")
+                           .attr("class", "y axis")
+                           .attr("transform", "translate(0,0)")
+                           .call(yAxis_a);
+
+
+                   // Add the y-axis to the left
+                   dataB.append("svg:g")
+                           .attr("class", "y axis")
+                           .attr("transform", "translate(0,0)")
+                           .call(yAxis_b);
+
+                   // Add the line by appending an svg:path element with the data line we created above
+                   // do this AFTER the axes above so that the line is above the tick-lines
+                   var lineData_a = lineData(dataset[0].dataA);
+                   dataA.append("svg:path").attr("d", lineA(lineData_a));
+                   var lineData_b = lineData(dataset[0].dataB);
+                   dataB.append("svg:path").attr("d", lineB(lineData_b));
+
+                   //highlight if we have anomaly
+                   if(dataset[0].startAnomaly){
+                       dataset[0].startAnomaly.forEach(function(element, index) {
+                           dataA.append("rect")
+                                   .attr("x", xScale_a(element))
+                                   .attr("y", 100)
+                                   .attr("width", xScale_a(dataset[0].endAnomaly[index])-xScale_a(element))
+                                   .attr("height", h_a);
+                           dataB.append("rect")
+                                   .attr("x", xScale_b(element))
+                                   .attr("y", 370)
+                                   .attr("width", xScale_b(dataset[0].endAnomaly[index])-xScale_b(element))
+                                   .attr("height", h_b);
+                       });
+                   }
 
                    d3.select('.tooltip').transition()
-                           .duration(200).style("opacity", .9)
-                           .style("left", (d3.event.pageX+128) + "px")
+                           .duration(200).style("opacity",.99)
+                           .style("left", (d3.event.pageX + 128) + "px")
                            .style("top", (d3.event.pageY - 128) + "px");
 
 
@@ -186,7 +234,7 @@
                            .duration(200).style("opacity", 0);
                }
 
-               node.on("mouseenter", mouseovered).on("mouseleave",mouseouted);
+               node.on("mouseenter", mouseovered).on("mouseleave", mouseouted);
            });
 
     });
@@ -238,21 +286,34 @@
         var map = [];
 
 
-        classes.forEach(function(element,index,array) {
+        classes.forEach(function(element) {
 
-            var dataNodes={};
-            var temp=[];
-            dataNodes.corr=element.corr;
-            dataNodes.refCorr=element.refCorr;
-            dataNodes.dataA=element.dataA;
-            dataNodes.dataB=element.dataB;
+            var dataNodes = {};
+            var temp = [];
+            dataNodes.corr = element.corr;
+            dataNodes.refCorr = element.refCorr;
+            dataNodes.dataA = element.dataA;
+            dataNodes.dataB = element.dataB;
             if(element.hasOwnProperty('startAnomaly')){
-                dataNodes.startAnomaly=element.startAnomaly;
-                dataNodes.endAnomaly=element.endAnomaly;
+                dataNodes.startAnomaly = element.startAnomaly;
+                dataNodes.endAnomaly = element.endAnomaly;
             }
             temp.push(dataNodes);
-            map[element.eventA]=temp;
-            map[element.eventB]=temp;
+            map[element.eventA] = temp;
+            map[element.eventB] = temp;
+        });
+
+        return map;
+    }
+    function lineData(data){
+        var map = [];
+        data.time.forEach(function(element, index) {
+
+            var dataNodes = {};
+            dataNodes.time = element;
+            dataNodes.value = data.value[index];
+            map.push(dataNodes);
+
         });
 
         return map;
